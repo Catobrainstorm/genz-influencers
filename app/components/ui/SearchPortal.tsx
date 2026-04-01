@@ -25,24 +25,31 @@ function RitualCanvas() {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden>
       <div style={{ position:"absolute", top:"-200px", left:"-100px", width:"700px", height:"700px", borderRadius:"50%", background:"radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%)" }} />
-      <style>{`
-        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-      `}</style>
     </div>
   );
 }
 
-function GlassCard({ children, style={} }: { children: React.ReactNode; style?: React.CSSProperties }) {
+// FIXED: Added className and proper React types to prevent build failure
+interface GlassCardProps {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  className?: string;
+}
+
+function GlassCard({ children, style={}, className="" }: GlassCardProps) {
   return (
-    <div style={{
-      background:"linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
-      border:"1px solid rgba(201,168,76,0.12)",
-      backdropFilter:"blur(40px) saturate(160%)",
-      WebkitBackdropFilter:"blur(40px) saturate(160%)",
-      boxShadow:"0 30px 80px rgba(0,0,0,0.4)",
-      position:"relative", overflow:"hidden",
-      ...style,
-    }}>
+    <div 
+      className={className}
+      style={{
+        background:"linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
+        border:"1px solid rgba(201,168,76,0.12)",
+        backdropFilter:"blur(40px) saturate(160%)",
+        WebkitBackdropFilter:"blur(40px) saturate(160%)",
+        boxShadow:"0 30px 80px rgba(0,0,0,0.4)",
+        position:"relative", overflow:"hidden",
+        ...style,
+      }}
+    >
       <div style={{ position:"absolute", top:0, left:0, right:0, height:"1px", background:`linear-gradient(90deg, transparent, ${GOLD}, transparent)`, opacity:0.3 }}/>
       {children}
     </div>
@@ -102,7 +109,7 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
     <div ref={portalRef} className="fixed inset-0 z-[100] flex flex-col items-center pt-[5vh] pb-20 overflow-y-auto px-6 md:px-12" style={{ background:`linear-gradient(160deg, ${DEEP} 0%, #0a1e30 100%)` }}>
       <RitualCanvas />
 
-      {/* EXITアーカイブ */}
+      {/* EXIT_PORTAL */}
       <button onClick={onClose} style={{ position:"fixed", top:"24px", right:"24px", zIndex:200, background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:"10px" }}>
         <span style={{ fontSize:"8px", letterSpacing:"0.4em", textTransform:"uppercase", color:"rgba(201,168,76,0.4)" }}>Exit_Archive</span>
         <div style={{ width:"40px", height:"40px", border:"1px solid rgba(201,168,76,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -111,7 +118,6 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
       </button>
 
       {!selectedPerson ? (
-        /* PHASE 0: SEARCH */
         <div className="w-full max-w-2xl mt-20 text-center relative z-10">
           <h2 style={{ fontSize:"clamp(40px,8vw,72px)", fontWeight:900, textTransform:"uppercase", color:"#fff", letterSpacing:"-0.02em" }}>IDENTIFY <em style={{ fontStyle:"italic", WebkitTextStroke:`1px ${GOLD}`, color:"transparent" }}>YOURSELF</em></h2>
           <GlassCard style={{ marginTop:"30px" }}>
@@ -130,15 +136,12 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
           </div>
         </div>
       ) : viewingDossier ? (
-        /* PHASE 1: DOSSIER (Centered Card) */
         <div ref={dossierRef} className="w-full max-w-md mt-20 relative z-10 text-center">
           <GlassCard style={{ padding:"60px 40px" }}>
             <p className="text-[9px] tracking-[0.8em] text-gold uppercase font-black mb-4">◈ Induction Profile ◈</p>
             <h2 className="text-4xl md:text-5xl font-black uppercase text-white mb-2 leading-none">{selectedPerson.name}</h2>
             <p className="text-[10px] tracking-[0.3em] uppercase opacity-40 mb-10">{selectedPerson.category}</p>
-            
             <p className="text-sm italic text-white/60 leading-relaxed mb-10">"{selectedPerson.details}"</p>
-            
             <button onClick={enterInduction} style={{ width:"100%", padding:"20px", background:GOLD, color:DEEP, fontWeight:900, letterSpacing:"0.4em", textTransform:"uppercase", border:"none", cursor:"pointer" }}>
               [ ENTER PORTAL ]
             </button>
@@ -146,16 +149,12 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
           <button onClick={()=>setSelectedPerson(null)} className="mt-8 text-[9px] uppercase tracking-widest opacity-20 hover:opacity-100 transition-opacity">← Back to Search</button>
         </div>
       ) : inPipeline && (
-        /* PHASE 2: INDUCTION HUB (SIDE-BY-SIDE) */
         <div className="w-full max-w-7xl mx-auto mt-10 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 relative z-10">
-          
-          {/* LEFT COLUMN: PIPELINE & FORM */}
           <div className="space-y-10">
             <div>
               <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black mb-2">Induction Sequence</p>
               <h2 className="text-5xl md:text-7xl font-black uppercase text-white leading-[0.85] tracking-tighter">{selectedPerson.name}</h2>
             </div>
-
             <div className="flex gap-10">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black ${step >= 2 ? 'bg-green-600 border-green-600' : 'border-gold text-gold'}`}>{step >= 2 ? "✓" : "01"}</div>
@@ -166,7 +165,6 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
                 <span className={`text-[9px] uppercase tracking-widest font-bold ${step === 2 ? 'text-white' : 'opacity-20'}`}>RSVP</span>
               </div>
             </div>
-
             {step === 1 ? (
               <GlassCard style={{ padding:"40px" }} className="animate-in fade-in slide-in-from-bottom-5 duration-700">
                 <p className="text-xs text-white/40 uppercase tracking-widest mb-8 leading-loose">
@@ -185,10 +183,8 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
                 </div>
               </GlassCard>
             ) : (
-              /* SEAMLESS GOOGLE FORM (STEP 2) */
               <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000">
                 <div style={{ position:"relative" }}>
-                   {/* Top Mask to hide Google Form branding */}
                    <div style={{ position:"absolute", top:0, left:0, right:0, height:"50px", background:"#0a1e30", zIndex:10 }}/>
                    <GlassCard style={{ padding:0 }}>
                       <iframe src={GOOGLE_FORM_URL} width="100%" height="700" frameBorder="0" style={{ filter:"invert(1) hue-rotate(180deg) contrast(0.9) brightness(0.9)", background:"transparent" }}>Loading RSVP...</iframe>
@@ -197,8 +193,6 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
               </div>
             )}
           </div>
-
-          {/* RIGHT COLUMN: PERSISTENT BADGE */}
           <div className="flex flex-col items-center">
             <div className="w-full sticky top-10">
               <GlassCard style={{ padding:"24px" }}>
@@ -209,7 +203,6 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
               </button>
             </div>
           </div>
-
         </div>
       )}
     </div>
