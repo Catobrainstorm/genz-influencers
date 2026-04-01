@@ -19,7 +19,7 @@ const GOLD_DIM   = "rgba(201,168,76,0.18)";
 const DEEP       = "#040F1A";
 
 /* ─────────────────────────────────────────
-   COMPONENTS
+   COMPONENTS & INTERFACES
 ───────────────────────────────────────── */
 function RitualCanvas() {
   return (
@@ -29,10 +29,6 @@ function RitualCanvas() {
   );
 }
 
-/**
- * GLASS CARD COMPONENT
- * Fixed: Explicitly typed to accept className for Tailwind animations
- */
 interface GlassCardProps {
   children: React.ReactNode;
   style?: React.CSSProperties;
@@ -60,6 +56,9 @@ function GlassCard({ children, style = {}, className = "" }: GlassCardProps) {
   );
 }
 
+/* ─────────────────────────────────────────
+   MAIN PORTAL EXPORT
+───────────────────────────────────────── */
 export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -118,15 +117,16 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
     <div ref={portalRef} className="fixed inset-0 z-[100] flex flex-col items-center pt-[5vh] pb-20 overflow-y-auto px-6 md:px-12" style={{ background: `linear-gradient(160deg, ${DEEP} 0%, #0a1e30 100%)` }}>
       <RitualCanvas />
 
-      {/* EXIT PORTAL */}
+      {/* EXIT_PORTAL */}
       <button onClick={onClose} style={{ position: "fixed", top: "24px", right: "24px", zIndex: 200, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}>
         <span style={{ fontSize: "8px", letterSpacing: "0.4em", textTransform: "uppercase", color: "rgba(201,168,76,0.4)" }}>Exit_Archive</span>
-        <div style={{ width: "40px", height: "40px", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: "40px", height: "40px", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent:"center" }}>
           <svg width="10" height="10" viewBox="0 0 12 12"><line x1="1" y1="1" x2="11" y2="11" stroke={GOLD} strokeWidth="1.2"/><line x1="11" y1="1" x2="1" y2="11" stroke={GOLD} strokeWidth="1.2"/></svg>
         </div>
       </button>
 
       {!selectedPerson ? (
+        /* PHASE 0: SEARCH */
         <div className="w-full max-w-2xl mt-20 text-center relative z-10">
           <h2 style={{ fontSize: "clamp(40px, 8vw, 72px)", fontWeight: 900, textTransform: "uppercase", color: "#fff", letterSpacing: "-0.02em" }}>IDENTIFY <em style={{ fontStyle: "italic", WebkitTextStroke: `1px ${GOLD}`, color: "transparent" }}>YOURSELF</em></h2>
           <GlassCard style={{ marginTop: "30px" }}>
@@ -139,12 +139,13 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
                   <div className="text-lg font-bold uppercase">{p.name}</div>
                   <div className="text-[8px] tracking-[0.3em] uppercase opacity-30">{p.category}</div>
                 </div>
-                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke={GOLD} strokeWidth="1.2"/></svg>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke={GOLD} strokeWidth="1.2"/></svg>
               </button>
             ))}
           </div>
         </div>
       ) : viewingDossier ? (
+        /* PHASE 1: DOSSIER */
         <div ref={dossierRef} className="w-full max-w-md mt-20 relative z-10 text-center">
           <GlassCard style={{ padding: "60px 40px" }}>
             <p className="text-[9px] tracking-[0.8em] text-gold uppercase font-black mb-4">◈ Induction Profile ◈</p>
@@ -158,12 +159,15 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
           <button onClick={() => setSelectedPerson(null)} className="mt-8 text-[9px] uppercase tracking-widest opacity-20 hover:opacity-100 transition-opacity">← Back to Search</button>
         </div>
       ) : inPipeline && (
+        /* PHASE 2: INDUCTION HUB (SIDE-BY-SIDE) */
         <div className="w-full max-w-7xl mx-auto mt-10 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 relative z-10">
+          
           <div className="space-y-10">
             <div>
               <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black mb-2">Induction Sequence</p>
               <h2 className="text-5xl md:text-7xl font-black uppercase text-white leading-[0.85] tracking-tighter">{selectedPerson.name}</h2>
             </div>
+
             <div className="flex gap-10">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black ${step >= 2 ? 'bg-green-600 border-green-600' : 'border-gold text-gold'}`}>{step >= 2 ? "✓" : "01"}</div>
@@ -174,29 +178,58 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
                 <span className={`text-[9px] uppercase tracking-widest font-bold ${step === 2 ? 'text-white' : 'opacity-20'}`}>RSVP</span>
               </div>
             </div>
+
             {step === 1 ? (
               <GlassCard 
-                style={{ padding: "40px" }} 
+                style={{ padding: "48px 40px" }} 
                 className="animate-in fade-in slide-in-from-bottom-5 duration-700"
               >
-                <p className="text-xs text-white/40 uppercase tracking-widest mb-8 leading-loose">
-                  To unlock your final documentation, collect your official asset and share your distribution link below.
-                </p>
-                <div className="space-y-4">
-                  <label className="text-[9px] uppercase tracking-[0.4em] text-gold font-black">Archive_Sync_Link</label>
-                  <input value={submissionLink} onChange={e => setSubmissionLink(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "18px", background: "rgba(0,0,0,0.3)", border: `1px solid rgba(201,168,76,0.1)`, color: "white", outline: "none" }} className="focus:border-gold transition-colors" />
-                  <button 
-                    onClick={async () => {
-                      if (!submissionLink.includes("http")) return;
-                      setIsSubmitting(true);
-                      await supabase.from("verifications").insert([{ name: selectedPerson.name, proof_link: submissionLink, status: "pending" }]);
-                      setStep(2); 
-                      setIsSubmitting(false);
-                    }} 
-                    style={{ width: "100%", padding: "20px", background: GOLD, color: DEEP, fontWeight: 900, cursor: "pointer", border: "none", letterSpacing: "0.4em" }}
-                  >
-                    {isSubmitting ? "SYNCING..." : "UNLOCK FINAL RSVP"}
-                  </button>
+                <div className="space-y-12">
+                  <div className="space-y-8">
+                    <div className="space-y-2">
+                      <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black opacity-80">Sequence_01</p>
+                      <p className="text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide font-bold max-w-lg">
+                        Collect your official asset and <span className="text-gold italic">share it via your primary social channel.</span>
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black opacity-80">Sequence_02</p>
+                      <p className="text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide font-bold max-w-lg">
+                        Paste the <span className="border-b border-gold/40">public link</span> of your post below to unlock the final documentation.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6 pt-6 border-t border-white/5">
+                    <div className="flex flex-col gap-3">
+                      <label className="text-[9px] uppercase tracking-[0.5em] text-gold font-black">Archive_Sync_Link</label>
+                      <input 
+                        value={submissionLink} 
+                        onChange={e => setSubmissionLink(e.target.value)} 
+                        placeholder="https://..." 
+                        style={{ 
+                          width: "100%", padding: "18px", background: "rgba(0,0,0,0.3)", 
+                          border: `1px solid rgba(201,168,76,0.15)`, color: "white", outline: "none" 
+                        }} 
+                        className="focus:border-gold transition-colors" 
+                      />
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        if (!submissionLink.includes("http")) return;
+                        setIsSubmitting(true);
+                        await supabase.from("verifications").insert([{ name: selectedPerson.name, proof_link: submissionLink, status: "pending" }]);
+                        setStep(2); 
+                        setIsSubmitting(false);
+                      }} 
+                      style={{ 
+                        width: "100%", padding: "20px", background: GOLD, color: DEEP, 
+                        fontWeight: 900, cursor: "pointer", border: "none", letterSpacing: "0.4em" 
+                      }}
+                    >
+                      {isSubmitting ? "SYNCING ARCHIVES..." : "UNLOCK FINAL RSVP"}
+                    </button>
+                  </div>
                 </div>
               </GlassCard>
             ) : (
@@ -210,6 +243,7 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
               </div>
             )}
           </div>
+
           <div className="flex flex-col items-center">
             <div className="w-full sticky top-10">
               <GlassCard style={{ padding: "24px" }}>
@@ -220,6 +254,7 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
               </button>
             </div>
           </div>
+
         </div>
       )}
     </div>

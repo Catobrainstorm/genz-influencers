@@ -66,7 +66,7 @@ export default function LandingPage() {
                   {/* ENLARGED STEP HEADER */}
                   <p className="text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] text-smartan-orange uppercase font-black transition-all group-hover:tracking-[0.3em]">Step 01</p>
                   <p className="text-base sm:text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide max-w-2xl font-bold opacity-90">
-                    Search the registry, claim your badge, share it online and <span className="text-smartan-orange italic">Share the link of the post.</span>
+                    Search the registry, claim your badge, share it online and <span className="text-smartan-orange italic">Copy the link of the post.</span>
                   </p>
                 </div>
                 
@@ -74,7 +74,7 @@ export default function LandingPage() {
                   {/* ENLARGED STEP HEADER */}
                   <p className="text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] text-smartan-orange uppercase font-black transition-all group-hover:tracking-[0.3em]">Step 02</p>
                   <p className="text-base sm:text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide max-w-2xl font-bold opacity-90">
-                    You use your <span className="border-b-2 border-smartan-orange/60">post link</span> to complete the rsvp
+                    Then use your <span className="border-b-2 border-smartan-orange/60">post link</span> to complete the rsvp
                   </p>
                 </div>
               </div>
