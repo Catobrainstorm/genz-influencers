@@ -75,13 +75,28 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
   const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfPumVQno93spWTbHiMOuc7v_vWPWLOJ0b46aBXtm3hiy4ZPA/viewform?embedded=true";
 
   useEffect(() => {
+    // 1. DYNAMIC DATA UNWRAPPING: Handles the "Object vs Array" issue from the new JSON
+    let dataArray: any[] = [];
+    
+    if (Array.isArray(registry)) {
+      dataArray = registry;
+    } else if (typeof registry === 'object' && registry !== null) {
+      // If it's an object with tabs (like "Form Responses 1"), merge them all into one list
+      dataArray = Object.values(registry).flat();
+    }
+
     if (query.length > 1) {
-      const filtered = registry
-        .filter((p: any) => (p["Name "] || "").toLowerCase().includes(query.toLowerCase()))
+      const filtered = dataArray
+        .filter((p: any) => {
+          if (!p) return false;
+          // SMART KEY CHECK: Handles "Name ", "Full Name", or "name"
+          const nameValue = p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "";
+          return nameValue.toString().toLowerCase().includes(query.toLowerCase());
+        })
         .map((p: any) => ({ 
-            name: (p["Name "] || "").trim(), 
-            category: p["Industry/Sector"] || "Elite Member",
-            details: p["Details"] || "Cultural Architect & Pioneer"
+            name: (p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "Unknown").toString().trim(), 
+            category: p["Industry/Sector"] || p["Current Location (City/State)"] || "Elite Member",
+            details: p["Details"] || p["Confirmation of Selection:"] || "Cultural Architect & Pioneer"
         }))
         .slice(0, 6);
       setResults(filtered);
@@ -161,13 +176,11 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
       ) : inPipeline && (
         /* PHASE 2: INDUCTION HUB (SIDE-BY-SIDE) */
         <div className="w-full max-w-7xl mx-auto mt-10 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 relative z-10">
-          
           <div className="space-y-10">
             <div>
               <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black mb-2">Induction Sequence</p>
               <h2 className="text-5xl md:text-7xl font-black uppercase text-white leading-[0.85] tracking-tighter">{selectedPerson.name}</h2>
             </div>
-
             <div className="flex gap-10">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black ${step >= 2 ? 'bg-green-600 border-green-600' : 'border-gold text-gold'}`}>{step >= 2 ? "✓" : "01"}</div>
@@ -178,83 +191,43 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
                 <span className={`text-[9px] uppercase tracking-widest font-bold ${step === 2 ? 'text-white' : 'opacity-20'}`}>RSVP</span>
               </div>
             </div>
-
             {step === 1 ? (
-              <GlassCard 
-                style={{ padding: "48px 40px" }} 
-                className="animate-in fade-in slide-in-from-bottom-5 duration-700"
-              >
+              <GlassCard style={{ padding: "48px 40px" }} className="animate-in fade-in slide-in-from-bottom-5 duration-700">
                 <div className="space-y-12">
                   <div className="space-y-8">
                     <div className="space-y-2">
                       <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black opacity-80">Sequence_01</p>
-                      <p className="text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide font-bold max-w-lg">
-                        Collect your official asset and <span className="text-gold italic">share it via your primary social channel.</span>
-                      </p>
+                      <p className="text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide font-bold max-w-lg">Collect your official asset and <span className="text-gold italic">share it via your primary social channel.</span></p>
                     </div>
                     <div className="space-y-2">
                       <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black opacity-80">Sequence_02</p>
-                      <p className="text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide font-bold max-w-lg">
-                        Paste the <span className="border-b border-gold/40">public link</span> of your post below to unlock the final documentation.
-                      </p>
+                      <p className="text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide font-bold max-w-lg">Paste the <span className="border-b border-gold/40">public link</span> of your post below.</p>
                     </div>
                   </div>
-
                   <div className="space-y-6 pt-6 border-t border-white/5">
-                    <div className="flex flex-col gap-3">
-                      <label className="text-[9px] uppercase tracking-[0.5em] text-gold font-black">Archive_Sync_Link</label>
-                      <input 
-                        value={submissionLink} 
-                        onChange={e => setSubmissionLink(e.target.value)} 
-                        placeholder="https://..." 
-                        style={{ 
-                          width: "100%", padding: "18px", background: "rgba(0,0,0,0.3)", 
-                          border: `1px solid rgba(201,168,76,0.15)`, color: "white", outline: "none" 
-                        }} 
-                        className="focus:border-gold transition-colors" 
-                      />
-                    </div>
-                    <button 
-                      onClick={async () => {
-                        if (!submissionLink.includes("http")) return;
-                        setIsSubmitting(true);
-                        await supabase.from("verifications").insert([{ name: selectedPerson.name, proof_link: submissionLink, status: "pending" }]);
-                        setStep(2); 
-                        setIsSubmitting(false);
-                      }} 
-                      style={{ 
-                        width: "100%", padding: "20px", background: GOLD, color: DEEP, 
-                        fontWeight: 900, cursor: "pointer", border: "none", letterSpacing: "0.4em" 
-                      }}
-                    >
-                      {isSubmitting ? "SYNCING ARCHIVES..." : "UNLOCK FINAL RSVP"}
-                    </button>
+                    <input value={submissionLink} onChange={e => setSubmissionLink(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "18px", background: "rgba(0,0,0,0.3)", border: `1px solid rgba(201,168,76,0.15)`, color: "white", outline: "none" }} />
+                    <button onClick={async () => {
+                      if (!submissionLink.includes("http")) return;
+                      setIsSubmitting(true);
+                      await supabase.from("verifications").insert([{ name: selectedPerson.name, proof_link: submissionLink, status: "pending" }]);
+                      setStep(2); setIsSubmitting(false);
+                    }} style={{ width: "100%", padding: "20px", background: GOLD, color: "#040F1A", fontWeight: 900, cursor: "pointer", border: "none", letterSpacing: "0.4em" }}>{isSubmitting ? "SYNCING..." : "UNLOCK FINAL RSVP"}</button>
                   </div>
                 </div>
               </GlassCard>
             ) : (
-              <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000">
-                <div style={{ position: "relative" }}>
-                   <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50px", background: "#0a1e30", zIndex: 10 }}/>
-                   <GlassCard style={{ padding: 0 }}>
-                      <iframe src={GOOGLE_FORM_URL} width="100%" height="700" frameBorder="0" style={{ filter: "invert(1) hue-rotate(180deg) contrast(0.9) brightness(0.9)", background: "transparent" }}>Loading RSVP...</iframe>
-                   </GlassCard>
-                </div>
+              <div style={{ position: "relative" }}>
+                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50px", background: "#0a1e30", zIndex: 10 }}/>
+                 <GlassCard style={{ padding: 0 }}><iframe src={GOOGLE_FORM_URL} width="100%" height="700" frameBorder="0" style={{ filter: "invert(1) hue-rotate(180deg) contrast(0.9) brightness(0.9)", background: "transparent" }}>Loading RSVP...</iframe></GlassCard>
               </div>
             )}
           </div>
-
           <div className="flex flex-col items-center">
             <div className="w-full sticky top-10">
-              <GlassCard style={{ padding: "24px" }}>
-                <IconBadge person={selectedPerson}/>
-              </GlassCard>
-              <button onClick={() => { setSelectedPerson(null); setStep(1); setInPipeline(false); setViewingDossier(false); }} className="w-full mt-6 py-4 border border-white/5 text-[9px] uppercase tracking-[0.5em] opacity-20 hover:opacity-100 transition-opacity">
-                [ Terminate Session ]
-              </button>
+              <GlassCard style={{ padding: "24px" }}><IconBadge person={selectedPerson}/></GlassCard>
+              <button onClick={() => { setSelectedPerson(null); setStep(1); setInPipeline(false); setViewingDossier(false); }} className="w-full mt-6 py-4 border border-white/5 text-[9px] uppercase tracking-[0.5em] opacity-20 hover:opacity-100 transition-opacity">[ Terminate Session ]</button>
             </div>
           </div>
-
         </div>
       )}
     </div>
