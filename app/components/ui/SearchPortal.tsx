@@ -75,13 +75,11 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
   const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfPumVQno93spWTbHiMOuc7v_vWPWLOJ0b46aBXtm3hiy4ZPA/viewform?embedded=true";
 
   useEffect(() => {
-    // 1. DYNAMIC DATA UNWRAPPING: Handles the "Object vs Array" issue from the new JSON
     let dataArray: any[] = [];
     
     if (Array.isArray(registry)) {
       dataArray = registry;
     } else if (typeof registry === 'object' && registry !== null) {
-      // If it's an object with tabs (like "Form Responses 1"), merge them all into one list
       dataArray = Object.values(registry).flat();
     }
 
@@ -89,13 +87,13 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
       const filtered = dataArray
         .filter((p: any) => {
           if (!p) return false;
-          // SMART KEY CHECK: Handles "Name ", "Full Name", or "name"
           const nameValue = p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "";
           return nameValue.toString().toLowerCase().includes(query.toLowerCase());
         })
         .map((p: any) => ({ 
             name: (p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "Unknown").toString().trim(), 
-            category: p["Industry/Sector"] || p["Current Location (City/State)"] || "Elite Member",
+            // FIXED: Standardized to "Elite Member" for everyone
+            category: "Elite Member",
             details: p["Details"] || p["Confirmation of Selection:"] || "Cultural Architect & Pioneer"
         }))
         .slice(0, 6);
@@ -191,6 +189,7 @@ export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onC
                 <span className={`text-[9px] uppercase tracking-widest font-bold ${step === 2 ? 'text-white' : 'opacity-20'}`}>RSVP</span>
               </div>
             </div>
+
             {step === 1 ? (
               <GlassCard style={{ padding: "48px 40px" }} className="animate-in fade-in slide-in-from-bottom-5 duration-700">
                 <div className="space-y-12">
