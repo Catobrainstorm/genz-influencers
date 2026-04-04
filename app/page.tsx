@@ -1,125 +1,143 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import SmartanScene from "./components/canvas/SmartanScene";
-import SearchPortal from "./components/ui/SearchPortal";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HiArrowRight, HiMoon, HiSun } from 'react-icons/hi';
+import SearchPortal from './components/ui/SearchPortal';
 
 export default function LandingPage() {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  const titleRef = useRef(null);
-  const infoRef = useRef(null);
-  const btnRef = useRef(null);
-  const navRef = useRef(null);
-  const footerRef = useRef(null);
+  const [isPortalOpen, setIsPortalOpen] = useState(false);
+  // FIXED: Initialized to true so Dark Mode is the default state
+  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
-    const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
-    tl.fromTo(navRef.current, { opacity: 0 }, { opacity: 1, duration: 2 })
-      .fromTo(titleRef.current, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 1.5 }, "-=1.5")
-      .fromTo(infoRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1.2 }, "-=1")
-      .fromTo(btnRef.current, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 1 }, "-=0.8")
-      .fromTo(footerRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1.5 }, "-=1");
-  }, []);
+  // Unified toggle function
+  const toggleDarkMode = () => setDarkMode(!darkMode);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-smartan-navy text-white font-sans selection:bg-smartan-orange selection:text-smartan-navy flex flex-col">
-      <SmartanScene />
+    <main className={`min-h-screen transition-colors duration-1000 overflow-hidden font-sans cursor-default selection:bg-smartan-orange/30 ${darkMode ? 'bg-[#050B14] text-white' : 'bg-[#FDFCF8] text-[#08263f]'}`}>
       
-      <SearchPortal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      {/* 1. GLOBAL BACKGROUND WATERMARK */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+        <h2 className={`text-[22vw] font-display font-black leading-none uppercase tracking-tighter opacity-[0.03] transition-all duration-1000 ${darkMode ? 'text-white' : 'text-[#f7961d]'}`}>
+          SMARTAN
+        </h2>
+      </div>
 
-      {/* 1. NAVIGATION */}
-      <nav ref={navRef} className="absolute top-0 w-full z-40 p-6 md:p-10 lg:p-14 flex justify-between items-start pointer-events-none">
-        <img 
-          src="/images/logo.png" 
-          alt="Smartan House" 
-          className="h-8 md:h-12 w-auto object-contain brightness-110 pointer-events-auto cursor-pointer transition-transform hover:scale-105" 
-        />
-        <div className="flex flex-col items-end space-y-1 pointer-events-auto">
-          <div className="w-12 md:w-16 h-[1px] bg-smartan-orange shadow-[0_0_10px_#f7961d]"></div>
-          <p className="text-[7px] md:text-[9px] tracking-[0.6em] uppercase text-white/60 font-black">Established 2026</p>
+      {/* 2. GLASSMORPHIC MASTER HEADER (z-[500]) */}
+      <nav className="fixed top-0 left-0 w-full z-[500] px-[5%] py-6 md:py-10 flex justify-between items-center transition-all duration-500 border-b border-white/10 backdrop-blur-xl bg-white/2 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
+        <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="pointer-events-auto">
+          <img 
+            src={darkMode ? "/images/logo-white.ico" : "/images/logo.png"} 
+            alt="Smartan House" 
+            className="h-10 md:h-14 lg:h-16 w-auto object-contain transition-all duration-500" 
+          />
+        </motion.div>
+        
+        <div className="flex items-center gap-6 pointer-events-auto">
+          <button 
+            onClick={toggleDarkMode}
+            className={`p-3 md:p-4 rounded-2xl border transition-all shadow-xl active:scale-90 ${
+              darkMode 
+              ? 'border-smartan-orange/30 bg-smartan-orange/10 text-smartan-orange' 
+              : 'border-black/5 bg-white/80 text-[#08263f]'
+            }`}
+          >
+            {darkMode ? <HiSun size={24} /> : <HiMoon size={24} />}
+          </button>
         </div>
       </nav>
 
-      {/* 2. HERO SECTION */}
-      <section className="relative z-30 flex-grow flex flex-col justify-center px-6 sm:px-12 md:px-24 lg:px-40 py-20">
-        <div className="max-w-7xl w-full mx-auto">
+      {/* 3. MAIN EDITORIAL SECTION */}
+      <section className="relative min-h-screen flex flex-col justify-center px-[8%] py-32 z-10">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 w-full max-w-[1600px] gap-12 lg:gap-32 items-center mx-auto">
           
-          <div ref={titleRef} className="relative mb-10 md:mb-16">
-            <span className="text-[8px] md:text-[10px] tracking-[1em] uppercase text-smartan-orange mb-4 block font-display font-black">
-              The Annual Roster
-            </span>
-            <h1 className="text-[10vw] sm:text-[8vw] md:text-7xl lg:text-8xl font-display font-light leading-[0.9] tracking-tight uppercase">
-              PRESTIGIOUS <br/>
-              <span className="font-black italic text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-smartan-orange">1000</span> <br/>
-              <span className="text-[7vw] sm:text-[6vw] md:text-5xl lg:text-6xl block">GEN-Z INFLUENCERS</span>
-            </h1>
-          </div>
+          {/* LEFT SIDE: SEAMLESS IMAGE (No Card, No Border) */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.5 }}
+            className="relative w-full max-w-[600px] mx-auto lg:mx-0 flex items-center justify-center"
+          >
+            <img 
+              src="/images/main.webp" 
+              alt="Induction Visual" 
+              className={`w-full h-auto object-contain transition-all duration-700 ${darkMode ? 'opacity-80 grayscale brightness-90' : 'opacity-100'}`}
+            />
+          </motion.div>
 
-          <div ref={infoRef} className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
-            <div className="md:col-span-9 lg:col-span-8 border-l border-white/10 pl-6 md:pl-10 space-y-12">
-              
-              {/* REFINED STEPS WITH ENLARGED HEADERS */}
-              <div className="space-y-12">
-                <div className="space-y-3 group">
-                  {/* ENLARGED STEP HEADER */}
-                  <p className="text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] text-smartan-orange uppercase font-black transition-all group-hover:tracking-[0.3em]">Step 01</p>
-                  <p className="text-base sm:text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide max-w-2xl font-bold opacity-90">
-                    Search the registry, claim your badge, share it online and <span className="text-smartan-orange italic">Copy the link of the post.</span>
-                  </p>
-                </div>
-                
-                <div className="space-y-3 group">
-                  {/* ENLARGED STEP HEADER */}
-                  <p className="text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] text-smartan-orange uppercase font-black transition-all group-hover:tracking-[0.3em]">Step 02</p>
-                  <p className="text-base sm:text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide max-w-2xl font-bold opacity-90">
-                    Then use your <span className="border-b-2 border-smartan-orange/60">post link</span> to complete the rsvp
-                  </p>
-                </div>
+          {/* RIGHT SIDE: THE COMMANDS */}
+          <div className="space-y-12 lg:space-y-20">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="space-y-10"
+            >
+              {/* LABEL */}
+              <div className="mb-4">
+                <span className={`tracking-[0.5em] uppercase text-[clamp(10px,1vw,12px)] font-black py-2 inline-block border-b-2 transition-all ${darkMode ? 'text-smartan-orange border-smartan-orange/40' : 'text-[#f7961d] border-[#f7961d]/20'}`}>
+                  The Annual Roster
+                </span>
               </div>
-              
-              <div ref={btnRef} className="pt-6">
+
+              {/* STEP 01 */}
+              <div className="space-y-4 relative group">
+                <div className={`absolute -left-8 top-0 w-1 h-full rounded-full transition-all group-hover:w-2 ${darkMode ? 'bg-smartan-pink' : 'bg-smartan-teal'}`} />
+                <p className={`text-[clamp(10px,1vw,11px)] font-black uppercase tracking-[0.4em] ${darkMode ? 'text-smartan-pink' : 'text-smartan-teal'}`}>Step 01</p>
+                <p className="text-[clamp(1.5rem,3vw,3rem)] font-display font-black leading-[1.1] tracking-tighter">
+                  Search the registry, claim your badge, share it online and <span className={`italic ${darkMode ? 'text-smartan-teal' : 'text-smartan-pink'}`}>copy the link of the post.</span>
+                </p>
+              </div>
+
+              {/* STEP 02 */}
+              <div className="space-y-4 group relative">
+                <div className={`absolute -left-8 top-0 w-1 h-full rounded-full transition-all group-hover:w-2 ${darkMode ? 'bg-smartan-teal' : 'bg-smartan-orange'}`} />
+                <p className={`text-[clamp(10px,1vw,11px)] font-black uppercase tracking-[0.4em] ${darkMode ? 'text-smartan-teal' : 'text-smartan-orange'}`}>Step 02</p>
+                <p className="text-[clamp(1.5rem,3vw,3rem)] font-display font-black leading-[1.1] tracking-tighter">
+                  Then use your <span className="underline decoration-smartan-orange decoration-4 underline-offset-8">post link</span> to complete the RSVP.
+                </p>
+              </div>
+
+              {/* CALL TO ACTION */}
+              <div className="pt-6">
                 <button 
-                  onClick={() => setIsSearchOpen(true)}
-                  className="group relative flex items-center space-x-6 z-50 cursor-pointer outline-none active:scale-95 transition-transform"
+                  onClick={() => setIsPortalOpen(true)}
+                  className={`group w-full md:w-auto px-[clamp(2rem,5vw,4rem)] py-[clamp(1rem,2vw,2rem)] rounded-full font-black text-[clamp(1.1rem,1.5vw,1.5rem)] transition-all shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center justify-center gap-6 active:scale-95 ${darkMode ? 'bg-white text-[#050B14] hover:bg-smartan-orange' : 'bg-[#08263f] text-white hover:bg-smartan-orange'}`}
                 >
-                  <div className="relative px-12 py-6 bg-white text-black text-[10px] tracking-[0.5em] uppercase font-black transition-all duration-500 group-hover:bg-smartan-orange group-hover:text-white group-hover:shadow-[0_0_40px_rgba(247,150,29,0.4)]">
-                    Get Started
-                  </div>
-                  <div className="w-16 h-[1px] bg-white/20 group-hover:w-24 group-hover:bg-smartan-orange transition-all duration-500"></div>
+                  GET STARTED
+                  <HiArrowRight className="group-hover:translate-x-3 transition-transform" />
                 </button>
               </div>
-            </div>
-
-            {/* BACKGROUND TEXT */}
-            <div className="hidden lg:block lg:col-span-4 text-right overflow-hidden">
-               <span className="text-[12vw] lg:text-[14rem] leading-none font-black opacity-[0.03] pointer-events-none select-none italic block translate-x-10 translate-y-10">
-                 SCC.26
-               </span>
-            </div>
+            </motion.div>
           </div>
+        </div>
+
+        {/* 4. PIN-SHARP FOOTER */}
+        <div className="fixed bottom-10 left-[5%] flex items-center gap-6 transition-all z-50 pointer-events-none">
+            <div className="flex gap-2">
+              {['#f7961d', '#ec297b', '#1b9a72', '#08263f'].map((color) => (
+                <div key={color} style={{ backgroundColor: color }} className="w-2 h-2 md:w-3 md:h-3 rounded-full shadow-lg" />
+              ))}
+            </div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.6em] transition-opacity duration-1000 ${darkMode ? 'text-white opacity-20' : 'text-[#08263f] opacity-30'}`}>Induction Portal // 2026</p>
         </div>
       </section>
 
-      {/* 3. FOOTER */}
-      <footer ref={footerRef} className="relative md:absolute bottom-0 md:bottom-10 w-full z-50 px-6 md:px-14 pb-8 md:pb-0">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 md:gap-0 border-t border-white/5 pt-8">
-          <div className="flex space-x-8 md:space-x-12 pointer-events-auto">
-            {['Instagram', 'X', 'LinkedIn'].map((platform) => (
-              <a key={platform} href="#" className="text-[9px] tracking-[0.4em] uppercase text-white/40 hover:text-smartan-orange transition-all duration-300 font-bold">
-                {platform}
-              </a>
-            ))}
-          </div>
-          <p className="text-[9px] tracking-[0.4em] uppercase text-white/40 font-display font-bold">
-            Smartan Culture Conference <span className="text-smartan-orange mx-2">//</span> 2026
-          </p>
-        </div>
-      </footer>
-
-      {/* NOISE OVERLAY */}
-      <div className="pointer-events-none fixed inset-0 z-[100] opacity-[0.05] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+      {/* Portal with default Dark Mode props passed */}
+      <SearchPortal 
+        isOpen={isPortalOpen} 
+        onClose={() => setIsPortalOpen(false)} 
+        darkMode={darkMode} 
+        toggleDarkMode={toggleDarkMode}
+      />
     </main>
   );
 }

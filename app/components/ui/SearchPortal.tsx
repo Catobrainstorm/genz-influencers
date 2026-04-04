@@ -1,234 +1,274 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import gsap from "gsap";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import html2canvas from "html2canvas";
 import registry from "../../../data/registry.json";
-import IconBadge from "./IconBadge";
-import { createClient } from '@supabase/supabase-js';
+import RSVPForm from "./RSVPForm";
+import { HiArrowRight, HiDownload, HiArrowLeft, HiMoon, HiSun, HiCheckCircle } from 'react-icons/hi';
+import { supabase } from "../../lib/supabaseClient";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-/* ─────────────────────────────────────────
-   GOLD PALETTE TOKENS
-───────────────────────────────────────── */
-const GOLD       = "#C9A84C";
-const GOLD_LIGHT = "#E8C97A";
-const GOLD_DIM   = "rgba(201,168,76,0.18)";
-const DEEP       = "#040F1A";
-
-/* ─────────────────────────────────────────
-   COMPONENTS & INTERFACES
-───────────────────────────────────────── */
-function RitualCanvas() {
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden>
-      <div style={{ position:"absolute", top:"-200px", left:"-100px", width:"700px", height:"700px", borderRadius:"50%", background:"radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%)" }} />
-    </div>
-  );
-}
-
-interface GlassCardProps {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-  className?: string;
-}
-
-function GlassCard({ children, style = {}, className = "" }: GlassCardProps) {
-  return (
-    <div 
-      className={className}
-      style={{
-        background: "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
-        border: "1px solid rgba(201,168,76,0.12)",
-        backdropFilter: "blur(40px) saturate(160%)",
-        WebkitBackdropFilter: "blur(40px) saturate(160%)",
-        boxShadow: "0 30px 80px rgba(0,0,0,0.4)",
-        position: "relative", 
-        overflow: "hidden",
-        ...style,
-      }}
-    >
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`, opacity: 0.3 }}/>
-      {children}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────
-   MAIN PORTAL EXPORT
-───────────────────────────────────────── */
-export default function SearchPortal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export default function SearchPortal({ isOpen, onClose, darkMode, toggleDarkMode }: any) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
-  const [viewingDossier, setViewingDossier] = useState(false);
-  const [inPipeline, setInPipeline] = useState(false);
-  const [step, setStep] = useState(1);
-  const [submissionLink, setSubmissionLink] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step, setStep] = useState(1); 
+  const [verificationLink, setVerificationLink] = useState("");
+  const [approvedNames, setApprovedNames] = useState<string[]>([]); // Tracking approved influencers
+  const badgeRef = useRef<HTMLDivElement>(null);
 
-  const portalRef  = useRef<HTMLDivElement>(null);
-  const dossierRef = useRef<HTMLDivElement>(null);
-
-  const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfPumVQno93spWTbHiMOuc7v_vWPWLOJ0b46aBXtm3hiy4ZPA/viewform?embedded=true";
+  // FETCH APPROVED NAMES FROM SUPABASE
+  useEffect(() => {
+    const fetchApproved = async () => {
+      const { data, error } = await supabase
+        .from('verifications')
+        .select('name')
+        .eq('status', 'approved');
+      
+      if (!error && data) {
+        setApprovedNames(data.map(item => item.name));
+      }
+    };
+    if (isOpen) fetchApproved();
+  }, [isOpen]);
 
   useEffect(() => {
-    let dataArray: any[] = [];
-    
-    if (Array.isArray(registry)) {
-      dataArray = registry;
-    } else if (typeof registry === 'object' && registry !== null) {
-      dataArray = Object.values(registry).flat();
-    }
+    const completeArray = (registry as any)["Complete "] || [];
+    const formResponses = (registry as any)["Form Responses 1"] || [];
+    const combinedData = [...completeArray, ...formResponses];
 
     if (query.length > 1) {
-      const filtered = dataArray
-        .filter((p: any) => {
-          if (!p) return false;
-          const nameValue = p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "";
-          return nameValue.toString().toLowerCase().includes(query.toLowerCase());
-        })
-        .map((p: any) => ({ 
-            name: (p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "Unknown").toString().trim(), 
-            // FIXED: Standardized to "Elite Member" for everyone
-            category: "Elite Member",
-            details: p["Details"] || p["Confirmation of Selection:"] || "Cultural Architect & Pioneer"
-        }))
-        .slice(0, 6);
-      setResults(filtered);
-    } else { 
-      setResults([]); 
+      const filtered = combinedData.filter((p: any) => {
+        if (!p) return false;
+        const name = p["Name "] || p["Full Name"] || p["Name"] || p["name"];
+        return name && typeof name === 'string' && name.toLowerCase().includes(query.toLowerCase());
+      }).map((p: any) => ({ 
+        name: (p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "").toString().trim() 
+      }));
+
+      const uniqueNames = new Set();
+      const distinctResults = filtered.filter(p => {
+        if (!p.name || uniqueNames.has(p.name)) return false;
+        uniqueNames.add(p.name);
+        return true;
+      }).slice(0, 5);
+
+      setResults(distinctResults);
+    } else {
+      setResults([]);
     }
   }, [query]);
 
-  const handleSelect = (person: any) => {
-    setSelectedPerson(person);
-    setViewingDossier(true);
-    setInPipeline(false);
-    setTimeout(() => {
-      if (dossierRef.current) gsap.fromTo(dossierRef.current, { opacity: 0, scale: 0.95, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.6 });
-    }, 50);
+  const handleDownload = async () => {
+    if (badgeRef.current) {
+      const canvas = await html2canvas(badgeRef.current, { backgroundColor: null, useCORS: true, scale: 4 });
+      const link = document.createElement("a");
+      link.download = `SCC_${selectedPerson?.name?.replace(/\s+/g, '')}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
   };
 
-  const enterInduction = async () => {
-    try {
-      const { data } = await supabase.from("verifications").select("status").ilike("name", selectedPerson.name).maybeSingle();
-      setStep(data ? 2 : 1);
-      setViewingDossier(false);
-      setInPipeline(true);
-    } catch { 
-      setStep(1); 
-      setInPipeline(true); 
+  const handleBack = () => {
+    if (step === 1) onClose();
+    else setStep(step - 1);
+  };
+
+  const handleSaveVerification = async () => {
+    if (verificationLink.includes("http")) {
+      try {
+        const { error } = await supabase
+          .from('verifications')
+          .insert([
+            {
+              name: selectedPerson.name,
+              proof_link: verificationLink,
+              status: 'pending'
+            },
+          ]);
+
+        if (error) throw error;
+        setStep(5);
+      } catch (error: any) {
+        console.error("Error saving verification:", error.message);
+        setStep(5);
+      }
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div ref={portalRef} className="fixed inset-0 z-[100] flex flex-col items-center pt-[5vh] pb-20 overflow-y-auto px-6 md:px-12" style={{ background: `linear-gradient(160deg, ${DEEP} 0%, #0a1e30 100%)` }}>
-      <RitualCanvas />
+    <AnimatePresence>
+      <motion.div 
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 35, stiffness: 220 }}
+        className={`fixed inset-0 z-[9999] overflow-y-auto font-sans transition-colors duration-1000 ${darkMode ? 'bg-[#050B14] text-white' : 'bg-[#FDFCF8] text-[#08263f]'}`}
+      >
+        <header className="fixed top-0 inset-x-0 h-24 md:h-32 px-6 md:px-12 lg:px-20 flex items-center justify-between z-[10000]">
+          <div className="flex items-center">
+             <img 
+               src={darkMode ? "/images/logo-white.ico" : "/images/logo.png"} 
+               alt="The Smartan House" 
+               className="h-8 md:h-12 lg:h-14 w-auto object-contain transition-all duration-500"
+             />
+          </div>
+          
+          <div className="flex items-center gap-4 md:gap-8">
+             <button 
+                onClick={toggleDarkMode}
+                className={`p-3 md:p-4 rounded-2xl shadow-xl transition-all active:scale-90 pointer-events-auto ${darkMode ? 'bg-white/5 border border-white/10 text-white' : 'bg-white border border-black/5 text-[#08263f]'}`}
+             >
+                {darkMode ? <HiSun className="text-smartan-orange" size={20} /> : <HiMoon className="text-[#08263f]" size={20} />}
+             </button>
 
-      {/* EXIT_PORTAL */}
-      <button onClick={onClose} style={{ position: "fixed", top: "24px", right: "24px", zIndex: 200, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}>
-        <span style={{ fontSize: "8px", letterSpacing: "0.4em", textTransform: "uppercase", color: "rgba(201,168,76,0.4)" }}>Exit_Archive</span>
-        <div style={{ width: "40px", height: "40px", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent:"center" }}>
-          <svg width="10" height="10" viewBox="0 0 12 12"><line x1="1" y1="1" x2="11" y2="11" stroke={GOLD} strokeWidth="1.2"/><line x1="11" y1="1" x2="1" y2="11" stroke={GOLD} strokeWidth="1.2"/></svg>
-        </div>
-      </button>
+             <button 
+               onClick={handleBack} 
+               className={`group flex items-center gap-3 md:gap-4 p-2 md:p-3 pr-4 md:pr-6 rounded-2xl transition-all duration-500 active:scale-90 pointer-events-auto ${
+                 darkMode 
+                 ? 'bg-[#050B14]/80 backdrop-blur-md border border-white/10 text-white shadow-2xl' 
+                 : 'bg-white/90 backdrop-blur-md border border-black/5 text-[#08263f] shadow-xl'
+               }`}
+             >
+               <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-xl transition-all duration-500 ${
+                 darkMode ? 'bg-white/5 group-hover:bg-smartan-orange' : 'bg-black/5 group-hover:bg-[#08263f] group-hover:text-white'
+               }`}>
+                 <HiArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+               </div>
+               <div className="hidden sm:flex flex-col items-start text-left">
+                 <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.4em] transition-all ${darkMode ? 'text-smartan-orange/80' : 'text-smartan-teal'}`}>Return</span>
+                 <span className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.1em] whitespace-nowrap">Previous Step</span>
+               </div>
+             </button>
+          </div>
+        </header>
 
-      {!selectedPerson ? (
-        /* PHASE 0: SEARCH */
-        <div className="w-full max-w-2xl mt-20 text-center relative z-10">
-          <h2 style={{ fontSize: "clamp(40px, 8vw, 72px)", fontWeight: 900, textTransform: "uppercase", color: "#fff", letterSpacing: "-0.02em" }}>IDENTIFY <em style={{ fontStyle: "italic", WebkitTextStroke: `1px ${GOLD}`, color: "transparent" }}>YOURSELF</em></h2>
-          <GlassCard style={{ marginTop: "30px" }}>
-            <input autoFocus type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="SEARCH NAME..." style={{ width: "100%", background: "transparent", border: "none", padding: "24px 30px", fontSize: "22px", fontWeight: 900, color: "#fff", outline: "none", letterSpacing: "0.1em" }} />
-          </GlassCard>
-          <div className="mt-4 space-y-2">
-            {results.map((p, i) => (
-              <button key={i} onClick={() => handleSelect(p)} className="w-full flex justify-between items-center p-6 bg-white/[0.02] border border-white/5 hover:border-gold/30 hover:bg-gold/5 transition-all text-left">
-                <div>
-                  <div className="text-lg font-bold uppercase">{p.name}</div>
-                  <div className="text-[8px] tracking-[0.3em] uppercase opacity-30">{p.category}</div>
-                </div>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke={GOLD} strokeWidth="1.2"/></svg>
+        <div className="container mx-auto px-6 md:px-20 lg:px-32 min-h-screen flex items-center pt-32 pb-24 md:pt-48 md:pb-40 relative">
+          
+          {step === 1 && (
+            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-4xl">
+              <div className="flex items-center gap-3 mb-8">
+                 <div className={`h-[1px] w-12 ${darkMode ? 'bg-smartan-pink' : 'bg-smartan-teal'}`} />
+                 <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${darkMode ? 'text-smartan-pink' : 'text-smartan-teal'}`}>Step 01 // Search</span>
+              </div>
+              <h2 className="text-[clamp(2.5rem,6vw,5.5rem)] font-display font-black leading-[0.9] tracking-tighter uppercase mb-8 text-left">
+                Identify <br/> 
+                <span className="text-transparent italic" style={{ WebkitTextStroke: darkMode ? '1.2px white' : '1.5px #08263f' }}>Yourself</span>
+              </h2>
+              <div className="relative max-w-2xl">
+                <input 
+                  autoFocus type="text" value={query} onChange={e=>setQuery(e.target.value)} 
+                  placeholder="TYPE YOUR NAME..." 
+                  className={`w-full border-b-2 bg-transparent py-4 md:py-8 text-xl md:text-4xl font-black outline-none transition-all placeholder:opacity-20 text-left ${darkMode ? 'border-white/10 focus:border-smartan-orange' : 'border-[#08263f]/10 focus:border-[#08263f]'}`} 
+                />
+              </div>
+              <div className="grid gap-4 mt-10 max-w-xl text-left">
+                {results.map((p, i) => {
+                  const isApproved = approvedNames.includes(p.name);
+                  return (
+                    <button 
+                      key={i} 
+                      disabled={isApproved}
+                      onClick={() => { setSelectedPerson(p); setStep(2); }} 
+                      className={`w-full flex justify-between items-center p-5 md:p-8 rounded-3xl border-2 transition-all group active:scale-[0.98] ${
+                        isApproved ? 'opacity-40 cursor-not-allowed border-white/5' : 
+                        darkMode ? 'bg-white/5 border-white/5 hover:border-smartan-orange' : 'bg-white border-black/5 hover:border-[#08263f] shadow-2xl'
+                      }`}
+                    >
+                      <span className={`text-lg md:text-xl font-black uppercase tracking-tight ${isApproved ? 'line-through' : ''}`}>
+                        {p.name}
+                      </span>
+                      {isApproved ? (
+                        <HiCheckCircle className="text-green-500" size={24} />
+                      ) : (
+                        <HiArrowRight className="text-smartan-orange group-hover:translate-x-2 transition-transform" size={24} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {step === 2 && (
+            <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-4xl text-left">
+              <div className="flex items-center gap-3 mb-8">
+                 <div className="h-[1px] w-12 bg-smartan-teal" />
+                 <span className="text-smartan-teal text-[10px] font-black uppercase tracking-[0.4em]">Identity Verified</span>
+              </div>
+              <h2 className="text-[clamp(3rem,8vw,7rem)] font-display font-black leading-none tracking-tighter uppercase mb-8">{selectedPerson?.name}</h2>
+              <p className="text-xl md:text-4xl font-display font-bold opacity-60 uppercase tracking-tighter mb-12 max-w-2xl leading-tight">
+                You are one of the <span className="text-smartan-orange italic">Prestigious 1000</span> Gen-Z Influencers.
+              </p>
+              <button onClick={() => setStep(3)} className={`px-12 py-7 rounded-full font-black text-xl md:text-2xl transition-all shadow-2xl active:scale-95 ${darkMode ? 'bg-white text-black hover:bg-smartan-orange hover:text-white' : 'bg-[#08263f] text-white hover:bg-smartan-orange'}`}>
+                GENERATE MY ASSET
               </button>
-            ))}
-          </div>
-        </div>
-      ) : viewingDossier ? (
-        /* PHASE 1: DOSSIER */
-        <div ref={dossierRef} className="w-full max-w-md mt-20 relative z-10 text-center">
-          <GlassCard style={{ padding: "60px 40px" }}>
-            <p className="text-[9px] tracking-[0.8em] text-gold uppercase font-black mb-4">◈ Induction Profile ◈</p>
-            <h2 className="text-4xl md:text-5xl font-black uppercase text-white mb-2 leading-none">{selectedPerson.name}</h2>
-            <p className="text-[10px] tracking-[0.3em] uppercase opacity-40 mb-10">{selectedPerson.category}</p>
-            <p className="text-sm italic text-white/60 leading-relaxed mb-10">"{selectedPerson.details}"</p>
-            <button onClick={enterInduction} style={{ width: "100%", padding: "20px", background: GOLD, color: DEEP, fontWeight: 900, letterSpacing: "0.4em", textTransform: "uppercase", border: "none", cursor: "pointer" }}>
-              [ ENTER PORTAL ]
-            </button>
-          </GlassCard>
-          <button onClick={() => setSelectedPerson(null)} className="mt-8 text-[9px] uppercase tracking-widest opacity-20 hover:opacity-100 transition-opacity">← Back to Search</button>
-        </div>
-      ) : inPipeline && (
-        /* PHASE 2: INDUCTION HUB (SIDE-BY-SIDE) */
-        <div className="w-full max-w-7xl mx-auto mt-10 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 relative z-10">
-          <div className="space-y-10">
-            <div>
-              <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black mb-2">Induction Sequence</p>
-              <h2 className="text-5xl md:text-7xl font-black uppercase text-white leading-[0.85] tracking-tighter">{selectedPerson.name}</h2>
-            </div>
-            <div className="flex gap-10">
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black ${step >= 2 ? 'bg-green-600 border-green-600' : 'border-gold text-gold'}`}>{step >= 2 ? "✓" : "01"}</div>
-                <span className={`text-[9px] uppercase tracking-widest font-bold ${step >= 1 ? 'text-white' : 'opacity-20'}`}>Asset</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black ${step === 2 ? 'border-gold text-gold' : 'border-white/10 opacity-20'}`}>02</div>
-                <span className={`text-[9px] uppercase tracking-widest font-bold ${step === 2 ? 'text-white' : 'opacity-20'}`}>RSVP</span>
-              </div>
-            </div>
+            </motion.div>
+          )}
 
-            {step === 1 ? (
-              <GlassCard style={{ padding: "48px 40px" }} className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-                <div className="space-y-12">
-                  <div className="space-y-8">
-                    <div className="space-y-2">
-                      <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black opacity-80">Sequence_01</p>
-                      <p className="text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide font-bold max-w-lg">Collect your official asset and <span className="text-gold italic">share it via your primary social channel.</span></p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-[10px] tracking-[0.6em] text-gold uppercase font-black opacity-80">Sequence_02</p>
-                      <p className="text-lg md:text-xl text-white font-display uppercase leading-tight tracking-wide font-bold max-w-lg">Paste the <span className="border-b border-gold/40">public link</span> of your post below.</p>
-                    </div>
-                  </div>
-                  <div className="space-y-6 pt-6 border-t border-white/5">
-                    <input value={submissionLink} onChange={e => setSubmissionLink(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "18px", background: "rgba(0,0,0,0.3)", border: `1px solid rgba(201,168,76,0.15)`, color: "white", outline: "none" }} />
-                    <button onClick={async () => {
-                      if (!submissionLink.includes("http")) return;
-                      setIsSubmitting(true);
-                      await supabase.from("verifications").insert([{ name: selectedPerson.name, proof_link: submissionLink, status: "pending" }]);
-                      setStep(2); setIsSubmitting(false);
-                    }} style={{ width: "100%", padding: "20px", background: GOLD, color: "#040F1A", fontWeight: 900, cursor: "pointer", border: "none", letterSpacing: "0.4em" }}>{isSubmitting ? "SYNCING..." : "UNLOCK FINAL RSVP"}</button>
-                  </div>
-                </div>
-              </GlassCard>
-            ) : (
-              <div style={{ position: "relative" }}>
-                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50px", background: "#0a1e30", zIndex: 10 }}/>
-                 <GlassCard style={{ padding: 0 }}><iframe src={GOOGLE_FORM_URL} width="100%" height="700" frameBorder="0" style={{ filter: "invert(1) hue-rotate(180deg) contrast(0.9) brightness(0.9)", background: "transparent" }}>Loading RSVP...</iframe></GlassCard>
+          {step === 3 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-6xl">
+               <div className="flex items-center gap-3 mb-8">
+                 <div className="h-[1px] w-12 bg-smartan-orange" />
+                 <span className="text-smartan-orange text-[10px] font-black uppercase tracking-[0.4em]">Step 02 // Asset Mission</span>
               </div>
-            )}
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="w-full sticky top-10">
-              <GlassCard style={{ padding: "24px" }}><IconBadge person={selectedPerson}/></GlassCard>
-              <button onClick={() => { setSelectedPerson(null); setStep(1); setInPipeline(false); setViewingDossier(false); }} className="w-full mt-6 py-4 border border-white/5 text-[9px] uppercase tracking-[0.5em] opacity-20 hover:opacity-100 transition-opacity">[ Terminate Session ]</button>
+               <div className="grid lg:grid-cols-2 gap-16 md:gap-32 items-center">
+                  <div ref={badgeRef} className="relative aspect-square max-w-[500px] mx-auto lg:mx-0 shadow-[0_50px_100px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden bg-white">
+                    <img src="/images/scc-badge.png" className="w-full h-full object-contain" alt="SCC Badge" />
+                    <div className="absolute inset-x-0 top-[25.5%] flex items-center justify-center px-12 text-center">
+                       <span className={`font-display font-black text-black uppercase tracking-tighter leading-[0.85] ${selectedPerson?.name?.length > 20 ? 'text-xl' : 'text-3xl'}`}>
+                         {selectedPerson?.name}
+                       </span>
+                    </div>
+                  </div>
+                  <div className="space-y-10 text-left">
+                    <h4 className="text-4xl md:text-6xl font-display font-black uppercase tracking-tighter leading-tight">Your Asset <br/> is Ready</h4>
+                    <p className="text-lg md:text-2xl font-medium opacity-80 italic leading-relaxed">
+                        1. <span className="font-black text-smartan-orange">Download</span> your badge below. <br/>
+                        2. <span className="font-black text-smartan-orange">Post</span> it on <span className="font-bold underline">X, Instagram, LinkedIn, or Facebook</span>. <br/>
+                        3. <span className="font-black text-smartan-orange">Copy the Link</span> of that post. <br/>
+                        4. Click "I Have Posted It" to complete your RSVP.
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-4 pt-6 border-t-2 border-current/10">
+                      <button onClick={handleDownload} className="w-full flex items-center justify-center gap-4 bg-smartan-orange text-[#08263f] py-7 rounded-3xl font-black text-lg hover:scale-[1.02] transition-all shadow-xl">
+                        <HiDownload size={24}/> <span className="uppercase leading-none">Download <br/>Badge</span>
+                      </button>
+                      <button onClick={() => setStep(4)} className={`w-full py-7 rounded-3xl border-2 font-black text-lg transition-all ${darkMode ? 'border-white hover:bg-white hover:text-black' : 'border-[#08263f]'}`}>
+                        I HAVE POSTED IT
+                      </button>
+                    </div>
+                  </div>
+               </div>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="w-full max-w-4xl space-y-12">
+               <div className="flex items-center gap-3 mb-12">
+                 <div className="h-[1px] w-12 bg-smartan-pink" />
+                 <span className="text-smartan-pink text-[10px] font-black uppercase tracking-[0.4em]">Step 03 // Verification Link</span>
+              </div>
+               <h2 className="text-6xl md:text-8xl font-display font-black uppercase tracking-tighter leading-[0.8] text-left">Paste <br/> <span className="italic opacity-30">The Link</span></h2>
+               <div className="space-y-12 max-w-3xl">
+                  <input 
+                    value={verificationLink} 
+                    onChange={e=>setVerificationLink(e.target.value)} 
+                    placeholder="PASTE LINK (HTTPS://...)" 
+                    className={`w-full border-b-2 bg-transparent py-8 text-2xl md:text-5xl font-black outline-none transition-all ${darkMode ? 'border-white/10 focus:border-smartan-pink text-white' : 'border-[#08263f]/10 focus:border-smartan-teal text-[#08263f]'}`} 
+                  />
+                  <button onClick={handleSaveVerification} className={`px-16 py-8 rounded-full font-black text-xl md:text-2xl transition-all shadow-2xl active:scale-95 ${darkMode ? 'bg-white text-black hover:bg-smartan-orange hover:text-white' : 'bg-[#08263f] text-white hover:bg-smartan-orange'}`}>
+                    CONTINUE TO RSVP
+                  </button>
+               </div>
+            </motion.div>
+          )}
+
+          {step === 5 && selectedPerson && (
+            <div className="w-full max-w-5xl">
+              <RSVPForm selectedName={selectedPerson.name} verificationLink={verificationLink} darkMode={darkMode} />
             </div>
-          </div>
+          )}
         </div>
-      )}
-    </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
