@@ -247,7 +247,7 @@ export default function AdminNexus() {
                   )}
                   
                   {activeTimer?.id === selectedEntity.id ? (
-                     <button onClick={() => setActiveTimer(null)} className="flex-1 bg-smartan-pink py-6 rounded-3xl text-xs font-black animate-pulse flex items-center justify-center gap-4 uppercase tracking-widest text-white shadow-2xl shadow-smartan-pink/40"><HiClock size={22} /> Abort Action ({activeTimer.count}s)</button>
+                     <button onClick={() => setActiveTimer(null)} className="flex-1 bg-smartan-pink py-6 rounded-3xl text-xs font-black animate-pulse flex items-center justify-center gap-4 uppercase tracking-widest text-white shadow-2xl shadow-smartan-pink/40"><HiClock size={22} /> Abort Action ({activeTimer?.count}s)</button>
                   ) : (
                     <div className="flex gap-4 flex-1">
                        <button onClick={() => setConfirmingAction({ id: selectedEntity.id, type: selectedEntity.status === 'approved' ? 'unverify' : 'approve', name: selectedEntity.full_name })} className={`flex-1 py-6 rounded-3xl font-black text-xs uppercase tracking-widest transition-all ${selectedEntity.status === 'approved' ? (darkMode ? 'bg-smartan-pink/10 text-smartan-pink border border-smartan-pink/20' : 'bg-white border border-smartan-pink/40 text-smartan-pink') : (darkMode ? 'bg-smartan-teal text-[#050B14]' : 'bg-[#1b9a72] text-white shadow-2xl')}`}>
