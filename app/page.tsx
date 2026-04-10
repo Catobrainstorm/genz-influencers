@@ -34,7 +34,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 w-full z-[500] px-[5%] py-6 md:py-10 flex justify-between items-center transition-all duration-500 border-b border-white/10 backdrop-blur-xl bg-white/2 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
         <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="pointer-events-auto">
           <img 
-            src={darkMode ? "/images/logo-white.ico" : "/images/logo.png"} 
+            src={darkMode ? "/images/logo-white.png" : "/images/logo.png"} 
             alt="Smartan House" 
             className="h-10 md:h-14 lg:h-16 w-auto object-contain transition-all duration-500" 
           />

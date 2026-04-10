@@ -32,27 +32,35 @@ export default function SearchPortal({ isOpen, onClose, darkMode, toggleDarkMode
   }, [isOpen]);
 
   useEffect(() => {
+    // Combine registry data safely
     const completeArray = (registry as any)["Complete "] || [];
     const formResponses = (registry as any)["Form Responses 1"] || [];
     const combinedData = [...completeArray, ...formResponses];
 
-    if (query.length > 1) {
-      const filtered = combinedData.filter((p: any) => {
-        if (!p) return false;
-        const name = p["Name "] || p["Full Name"] || p["Name"] || p["name"];
-        return name && typeof name === 'string' && name.toLowerCase().includes(query.toLowerCase());
-      }).map((p: any) => ({ 
-        name: (p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "").toString().trim() 
-      }));
+    if (query.trim().length > 1) {
+      // 1. Filter and Map data while handling various JSON key formats
+      const filtered = combinedData
+        .filter((p: any) => {
+          if (!p) return false;
+          const name = p["Name "] || p["Full Name"] || p["Name"] || p["name"];
+          return name && typeof name === 'string' && name.toLowerCase().includes(query.toLowerCase());
+        })
+        .map((p: any) => ({ 
+          name: (p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "").toString().trim() 
+        }));
 
-      const uniqueNames = new Set();
-      const distinctResults = filtered.filter(p => {
-        if (!p.name || uniqueNames.has(p.name)) return false;
-        uniqueNames.add(p.name);
-        return true;
-      }).slice(0, 5);
+      // 2. STRICT DEDUPLICATION
+      // Using a Map with lowercase keys to ensure "David" and "david" are seen as the same
+      const uniqueMap = new Map();
+      filtered.forEach(p => {
+        const normalized = p.name.toLowerCase();
+        if (!uniqueMap.has(normalized)) {
+          uniqueMap.set(normalized, p);
+        }
+      });
 
-      setResults(distinctResults);
+      // 3. Convert back to array (Removed the .slice(0,5) to show EVERY match)
+      setResults(Array.from(uniqueMap.values()));
     } else {
       setResults([]);
     }
@@ -107,7 +115,7 @@ export default function SearchPortal({ isOpen, onClose, darkMode, toggleDarkMode
         <header className="fixed top-0 inset-x-0 h-24 md:h-32 px-6 md:px-12 lg:px-20 flex items-center justify-between z-[10000]">
           <div className="flex items-center">
              <img 
-               src={darkMode ? "/images/logo-white.ico" : "/images/logo.png"} 
+               src={darkMode ? "/images/logo-white.png" : "/images/logo.png"} 
                alt="The Smartan House" 
                className="h-8 md:h-12 lg:h-14 w-auto object-contain transition-all duration-500"
              />

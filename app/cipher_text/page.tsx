@@ -120,7 +120,7 @@ export default function AdminNexus() {
   if (!isAuthenticated) return (
     <div className={`min-h-screen flex items-center justify-center transition-colors duration-1000 ${darkMode ? 'bg-[#050B14]' : 'bg-[#FDFCF8]'}`}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`text-center p-12 md:p-16 rounded-[4rem] border backdrop-blur-3xl shadow-2xl transition-all ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-black/5'}`}>
-        <img src={darkMode ? "/images/logo-white.ico" : "/images/logo.png"} alt="Smartan House" className="h-16 w-auto mx-auto mb-10" />
+        <img src={darkMode ? "/images/logo-whitepng" : "/images/logo.png"} alt="Smartan House" className="h-16 w-auto mx-auto mb-10" />
         <h2 className={`text-2xl font-display font-black uppercase tracking-[0.2em] mb-10 italic ${darkMode ? 'text-white' : 'text-[#08263f]'}`}>Control <span className="text-smartan-orange">Nexus</span></h2>
         
         <form onSubmit={(e) => { e.preventDefault(); if(password === "cipher02040") setIsAuthenticated(true); else alert("Invalid Cipher"); }} className="relative group">
@@ -148,7 +148,7 @@ export default function AdminNexus() {
       {/* HEADER SECTION */}
       <header className={`px-12 py-8 border-b flex justify-between items-center z-[100] transition-all ${darkMode ? 'bg-[#050B14] border-white/10' : 'bg-[#FDFCF8] border-black/5'}`}>
         <div className="flex items-center gap-6">
-          <img src={darkMode ? "/images/logo-white.ico" : "/images/logo.png"} alt="Logo" className="h-10 w-auto" />
+          <img src={darkMode ? "/images/logo-whitepng" : "/images/logo.png"} alt="Logo" className="h-10 w-auto" />
           <div className="h-10 w-[1px] bg-current opacity-10" />
           <div>
             <h1 className="text-3xl font-display font-black uppercase italic tracking-tighter leading-none">Control <span className="text-smartan-orange">Nexus</span></h1>
