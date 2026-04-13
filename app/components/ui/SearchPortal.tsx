@@ -31,26 +31,30 @@ export default function SearchPortal({ isOpen, onClose, darkMode, toggleDarkMode
     if (isOpen) fetchApproved();
   }, [isOpen]);
 
+  // SEARCH LOGIC: REFINED FOR REGISTRY.JSON STRUCTURE
   useEffect(() => {
-    // Combine registry data safely
-    const completeArray = (registry as any)["Complete "] || [];
-    const formResponses = (registry as any)["Form Responses 1"] || [];
-    const combinedData = [...completeArray, ...formResponses];
+    const combinedData = Array.isArray(registry) ? registry : [];
 
     if (query.trim().length > 1) {
-      // 1. Filter and Map data while handling various JSON key formats
+      // Split query into terms to support "Firstname Lastname" or just "Firstname"
+      const searchTerms = query.toLowerCase().split(" ").filter(t => t.length > 0);
+
       const filtered = combinedData
         .filter((p: any) => {
           if (!p) return false;
+          // Primary key from your registry.json is "Name "
           const name = p["Name "] || p["Full Name"] || p["Name"] || p["name"];
-          return name && typeof name === 'string' && name.toLowerCase().includes(query.toLowerCase());
+          if (!name || typeof name !== 'string' || name.trim() === "") return false;
+          
+          const lowerName = name.toLowerCase();
+          // Ensure every word typed in the search box exists somewhere in the name
+          return searchTerms.every(term => lowerName.includes(term));
         })
         .map((p: any) => ({ 
           name: (p["Name "] || p["Full Name"] || p["Name"] || p["name"] || "").toString().trim() 
         }));
 
-      // 2. STRICT DEDUPLICATION
-      // Using a Map with lowercase keys to ensure "David" and "david" are seen as the same
+      // STRICT DEDUPLICATION: Group by normalized name
       const uniqueMap = new Map();
       filtered.forEach(p => {
         const normalized = p.name.toLowerCase();
@@ -59,7 +63,7 @@ export default function SearchPortal({ isOpen, onClose, darkMode, toggleDarkMode
         }
       });
 
-      // 3. Convert back to array (Removed the .slice(0,5) to show EVERY match)
+      // Update results with all unique matches (Removed limit to show full history)
       setResults(Array.from(uniqueMap.values()));
     } else {
       setResults([]);
